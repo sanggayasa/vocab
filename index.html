@@ -81,11 +81,11 @@
         <button id="saveJsonBtn" style="background-color: #ffc107; color: black; margin-bottom: 10px;">Simpan JSON ke
             Browser</button>
 
-        <label for="categorySelect" style="display: block; margin-bottom: 5px;"><strong>Pilih Kategori untuk
-                Diputar:</strong></label>
-        <select id="categorySelect" style="margin-bottom: 15px;">
-            <option value="all">Semua Kategori</option>
-        </select>
+        <label style="display: block; margin-bottom: 5px;"><strong>Centang Kategori untuk Diputar:</strong></label>
+        <div id="categoryCheckboxContainer"
+            style="margin-bottom: 15px; max-height: 120px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px; background: #fff;">
+            <!-- Checkboxes will be injected here -->
+        </div>
 
         <button id="speakAlternatingBtn" style="background-color: #28a745;">Putar Percakapan Bergantian (File
             JSON)</button>
@@ -98,7 +98,7 @@
         const speakBtn = document.querySelector('#speakBtn');
         const jsonInput = document.querySelector('#jsonInput');
         const saveJsonBtn = document.querySelector('#saveJsonBtn');
-        const categorySelect = document.querySelector('#categorySelect');
+        const categoryCheckboxContainer = document.querySelector('#categoryCheckboxContainer');
         const speakAlternatingBtn = document.querySelector('#speakAlternatingBtn');
 
         let voices = [];
@@ -159,7 +159,7 @@
             { "text": "Car", "lang": "en-US", "category": "Darat" }
         ];
 
-        // Fungsi memperbarui pilihan kategori berdasarkan JSON saat ini
+        // Fungsi memperbarui daftar Checkbox kategori berdasarkan JSON saat ini
         function updateCategoryDropdown(dialogsArray) {
             // Mengambil semua kategori unik dari array JSON
             const categories = new Set();
@@ -167,15 +167,26 @@
                 if (item.category) categories.add(item.category);
             });
 
-            // Reset isi dropdown (pertahankan opsi Semua Kategori)
-            categorySelect.innerHTML = '<option value="all">Semua Kategori</option>';
+            // Kosongkan container
+            categoryCheckboxContainer.innerHTML = '';
 
-            // Tambahkan kategori yang ditemukan ke dalam dropdown
+            // Tambahkan checkbox untuk setiap kategori
             categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                categorySelect.appendChild(option);
+                const label = document.createElement('label');
+                label.style.display = 'block';
+                label.style.marginBottom = '8px';
+                label.style.cursor = 'pointer';
+
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.value = cat;
+                cb.checked = true; // Langsung dicentang secara default
+                cb.className = 'cat-checkbox';
+
+                label.appendChild(cb);
+                label.appendChild(document.createTextNode(' ' + cat));
+
+                categoryCheckboxContainer.appendChild(label);
             });
         }
 
@@ -235,11 +246,17 @@
                 return;
             }
 
-            // Filter JSON berdasar Kategori yang dipilih
-            const selectedCat = categorySelect.value;
-            if (selectedCat !== "all") {
-                dialogs = dialogs.filter(item => item.category === selectedCat);
+            // Ambil semua kategori yang dicentang
+            const checkedBoxes = document.querySelectorAll('.cat-checkbox:checked');
+            const selectedCats = Array.from(checkedBoxes).map(cb => cb.value);
+
+            if (selectedCats.length === 0) {
+                alert("Pilih (centang) minimal satu kategori untuk diputar!");
+                return;
             }
+
+            // Filter JSON berdasar Multi-Kategori yang dicentang
+            dialogs = dialogs.filter(item => selectedCats.includes(item.category));
 
             if (dialogs.length === 0) {
                 alert("Tidak ada teks dengan kategori tersebut.");
