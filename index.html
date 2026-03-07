@@ -277,6 +277,11 @@
         const deselectAllBtn = document.querySelector('#deselectAllBtn');
         const speakAlternatingBtn = document.querySelector('#speakAlternatingBtn');
 
+        // State untuk Custom Audio Engine (Mengakali bug Android)
+        let customQueueDialogs = [];
+        let customQueueIndex = 0;
+        let isCustomPaused = false;
+
         // Element untuk Popup / Overlay
         const nowPlayingOverlay = document.querySelector('#nowPlayingOverlay');
         const playingText = document.querySelector('#playingText');
@@ -589,62 +594,77 @@
                 return;
             }
 
-            // Fungsi pembantu untuk mencari suara berdasarkan prefix bahasa (id atau en)
-            // Di beberapa HP Android, kode bahasa Indonesia bukan "id" melainkan "in" (in-ID / in_ID)
-            const getVoice = (langPrefix) => {
-                return voices.find(v => {
-                    const voiceLang = v.lang.toLowerCase();
-                    if (voiceLang.startsWith(langPrefix)) return true;
-                    // Jika mencari 'id' tapi tidak ketemu, coba cari 'in' sebagai fallback
-                    if (langPrefix === 'id' && voiceLang.startsWith('in')) return true;
-                    return false;
-                });
+            // Inisialisasi antrean Custom Audio Engine
+            customQueueDialogs = dialogs;
+            customQueueIndex = 0;
+            isCustomPaused = false;
+
+            // Jalankan Engine
+            playNextDialog();
+        };
+
+        // Fungsi Engine Pemutar Kustom Berantai
+        function playNextDialog() {
+            // Jika User menekan Pause, hentikan pemanggilan rekursif
+            if (isCustomPaused) return;
+
+            // Jika antrean sudah habis, tutup popup
+            if (customQueueIndex >= customQueueDialogs.length) {
+                setTimeout(() => {
+                    if (!synth.speaking && !synth.pending) {
+                        nowPlayingOverlay.classList.add('hidden');
+                    }
+                }, 100);
+                return;
+            }
+
+            const dialog = customQueueDialogs[customQueueIndex];
+            const utter = new SpeechSynthesisUtterance(dialog.text);
+
+            // Kunci Bahasa
+            utter.lang = dialog.lang;
+
+            // Fungsi Pencari Voice
+            const prefix = dialog.lang.split('-')[0].toLowerCase();
+            const voice = voices.find(v => {
+                const voiceLang = v.lang.toLowerCase();
+                if (voiceLang.startsWith(prefix)) return true;
+                if (prefix === 'id' && voiceLang.startsWith('in')) return true;
+                return false;
+            });
+
+            if (voice) utter.voice = voice;
+            utter.rate = 1;
+
+            // Event saatMulai Suara
+            utter.onstart = () => {
+                nowPlayingOverlay.classList.remove('hidden');
+                playingLang.textContent = dialog.lang;
+                playingText.textContent = dialog.text;
+
+                pauseBtn.classList.remove('hidden');
+                resumeBtn.classList.add('hidden');
             };
 
-            // Masukkan JSON tadi ke mesin pemutar suara lewat perulangan
-            dialogs.forEach(dialog => {
-                const utter = new SpeechSynthesisUtterance(dialog.text);
+            // Event saat Selesai Suara (Berlanjut Otomatis ke indeks berikutnya)
+            utter.onend = () => {
+                if (isCustomPaused) return; // Dicegat jika sedang pause
+                customQueueIndex++;
+                setTimeout(playNextDialog, 250); // Jeda antar kosakata 250ms
+            };
 
-                // --- BAGIAN SANGAT PENTING UNTUK ANDROID ---
-                // Menyuruh sistem operasi (Android) mengunci bahasa tersebut
-                // meskipun nama suaranya tidak ketemu atau kurang pas.
-                utter.lang = dialog.lang;
-
-                // Cari suara bahasa Indonesia atau English
-                const prefix = dialog.lang.split('-')[0].toLowerCase(); // 'id' atau 'en'
-                const voice = getVoice(prefix);
-
-                if (voice) {
-                    utter.voice = voice;
+            // Event jika ada error mesin (sering terjadi pas dicancel)
+            utter.onerror = (e) => {
+                if (e.error !== 'canceled' && e.error !== 'interrupted') {
+                    if (!isCustomPaused) {
+                        customQueueIndex++;
+                        setTimeout(playNextDialog, 250);
+                    }
                 }
+            };
 
-                utter.rate = 1;
-
-                // Tampilkan kalimat di layar secara real-time saat mulai diucapkan
-                utter.onstart = () => {
-                    nowPlayingOverlay.classList.remove('hidden');
-                    playingLang.textContent = dialog.lang;
-                    playingText.textContent = dialog.text;
-
-                    // Pastikan tombol pause yang tampil, resume hilang
-                    pauseBtn.classList.remove('hidden');
-                    resumeBtn.classList.add('hidden');
-                };
-
-                // Sembunyikan wadah kalau pemutaran semua list antrean sudah beres
-                utter.onend = () => {
-                    // Kasih jeda waktu 100 milidetik untuk melihat apakah ada kata selanjutnya di antrean
-                    setTimeout(() => {
-                        if (!synth.speaking && !synth.pending) {
-                            nowPlayingOverlay.classList.add('hidden');
-                        }
-                    }, 100);
-                };
-
-                // Masukkan ke antrean Web Speech API (akan diputar berurutan otomatis)
-                synth.speak(utter);
-            });
-        };
+            synth.speak(utter);
+        }
 
         // 4. Event Listener untuk Pilih Semua / Kosongkan Kategori
         selectAllBtn.onclick = () => {
@@ -656,6 +676,8 @@
 
         // 5. Kontrol Pemutaran pada Popup
         const stopEverythingAndClose = () => {
+            isCustomPaused = true;
+            customQueueIndex = customQueueDialogs.length; // paksa tamat
             synth.cancel(); // Menghapus dan mematikan semua antrean suara
             nowPlayingOverlay.classList.add('hidden');
         };
@@ -664,7 +686,8 @@
         stopBtn.onclick = stopEverythingAndClose;
 
         pauseBtn.onclick = () => {
-            synth.pause();
+            isCustomPaused = true;
+            synth.cancel(); // Langsung matikan mesin secara paksa
 
             // Ganti tombol Pause jadi Lanjut
             pauseBtn.classList.add('hidden');
@@ -672,14 +695,11 @@
         };
 
         resumeBtn.onclick = () => {
-            // Trik khusus untuk membangunkan (Wake-up) Web Speech API di Android Chrome yang sering nge-bug (ngadat saat resume)
-            synth.resume();
+            isCustomPaused = false;
 
-            const wakeUpUtterance = new SpeechSynthesisUtterance('');
-            wakeUpUtterance.volume = 0; // bisukan
-            synth.speak(wakeUpUtterance);
-
-            synth.resume();
+            // JANGAN PAKAI synth.resume() karena rusak di Android browser.
+            // Sebagai gantinya, panggil ulang playNextDialog dari indeks kata terakhir.
+            playNextDialog();
 
             // Ganti tombol Lanjut kembali jadi Pause
             resumeBtn.classList.add('hidden');
