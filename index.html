@@ -6,89 +6,234 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sanggayasa TTS Simple</title>
 
+    <!-- Tailwind CSS (dimasukkan via CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
     <!-- Pengaturan untuk Add to Home Screen (Android / iOS) -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#f4f4f9">
-    <link rel="icon" sizes="192x192" href="icon.png">
-    <link rel="apple-touch-icon" href="icon.png">
+
+    <!-- Ikon Tab Browser (Favicon) & Home Screen Icon otomatis tanpa perlu file gambar dari luar -->
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗣️</text></svg>">
+    <link rel="apple-touch-icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗣️</text></svg>">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         body {
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            padding: 50px;
-            background-color: #f4f4f9;
-        }
-
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            width: 400px;
-        }
-
-        textarea {
-            width: 100%;
-            height: 100px;
-            margin-bottom: 10px;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-
-        button {
-            width: 100%;
-            padding: 10px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        select {
-            width: 100%;
-            margin-bottom: 10px;
-            padding: 5px;
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            /* bg-gray-100 */
         }
     </style>
 </head>
 
 <body>
 
-    <div class="container">
-        <h2>Web Text-to-Speech</h2>
-        <p>Masukkan teks di bawah ini:</p>
+    <div class="min-h-screen py-10 flex items-center justify-center p-4">
+        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-2xl transition-all border border-gray-100">
 
-        <select id="voiceSelect">
-            <option value="">Memuat suara...</option>
-        </select>
+            <div class="text-center mb-6">
+                <!-- Judul plus Logo Icon di sebelahnya -->
+                <h2 class="text-2xl font-extrabold text-gray-800 tracking-tight flex justify-center items-center gap-3">
+                    <div class="bg-blue-100 p-2 rounded-full text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M4 11v2a2 2 0 002 2h2l4 4V5L8 9H6a2 2 0 00-2 2z" />
+                        </svg>
+                    </div>
+                    Web Text-to-Speech
+                </h2>
+                <p class="text-sm text-gray-500 mt-2">Sanggayasa Simple TTS</p>
+            </div>
 
-        <textarea id="textInput">Hello Sanggayasa, let's learn English today!</textarea>
+            <!-- Bagian 1: Mode Percakapan (JSON TTS) -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Skrip Percakapan (JSON):</label>
+                <textarea id="jsonInput"
+                    class="w-full h-40 font-mono text-sm p-3 border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors mb-2 resize-y"></textarea>
 
-        <button id="speakBtn">Putar Suara</button>
+                <button id="saveJsonBtn"
+                    class="w-full mb-6 bg-yellow-400 hover:bg-yellow-500 active:bg-yellow-600 text-yellow-900 font-bold py-2.5 px-4 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clip-rule="evenodd" />
+                    </svg>
+                    Simpan Perubahan Skrip
+                </button>
 
-        <hr style="margin: 20px 0;">
-        <h3>Mode Percakapan (JSON)</h3>
-        <p>Masukkan skrip percakapan format array JSON:</p>
-        <textarea id="jsonInput" style="height: 250px; font-family: monospace; font-size: 14px;"></textarea>
-        <button id="saveJsonBtn" style="background-color: #ffc107; color: black; margin-bottom: 10px;">Simpan JSON ke
-            Browser</button>
+                <div class="flex justify-between items-center mb-3">
+                    <label class="block text-sm font-semibold text-gray-700">Filter Kategori (Bisa Pilih
+                        Banyak):</label>
+                    <div class="flex gap-2">
+                        <button id="selectAllBtn"
+                            class="px-3 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300 transition-colors">Semua</button>
+                        <button id="deselectAllBtn"
+                            class="px-3 py-1 text-xs font-semibold rounded-lg bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-200 transition-colors">Kosong</button>
+                    </div>
+                </div>
 
-        <label style="display: block; margin-bottom: 5px;"><strong>Centang Kategori untuk Diputar:</strong></label>
-        <div id="categoryCheckboxContainer"
-            style="margin-bottom: 15px; max-height: 120px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px; background: #fff;">
-            <!-- Checkboxes will be injected here -->
+                <div id="categoryCheckboxContainer"
+                    class="flex flex-wrap gap-2 mb-6 p-4 border border-gray-200 rounded-xl bg-gray-50/50 max-h-40 overflow-y-auto">
+                    <!-- Checkboxes will be injected here -->
+                </div>
+
+                <button id="speakAlternatingBtn"
+                    class="w-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-bold py-4 px-4 rounded-xl transition-colors shadow-lg flex justify-center items-center gap-2 text-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Putar Percakapan (JSON)
+                </button>
+            </div>
+
+            <div class="flex items-center my-8">
+                <div class="flex-grow border-t border-gray-200"></div>
+                <span class="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">Pengaturan Teks Manual</span>
+                <div class="flex-grow border-t border-gray-200"></div>
+            </div>
+
+            <!-- Bagian 2: Basic TTS -->
+            <div class="mb-4 p-5 bg-blue-50/50 rounded-2xl border border-blue-100">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Suara Pilihan:</label>
+                <select id="voiceSelect"
+                    class="w-full mb-4 p-3 border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow appearance-none cursor-pointer">
+                    <option value="">Memuat suara...</option>
+                </select>
+
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Teks Percobaan:</label>
+                <textarea id="textInput"
+                    class="w-full h-24 mb-4 p-3 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                    placeholder="Ketik sesuatu...">Hello Sanggayasa, let's learn English today!</textarea>
+
+                <button id="speakBtn"
+                    class="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-md flex justify-center items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z"
+                            clip-rule="evenodd" />
+                    </svg>
+                    Putar Suara
+                </button>
+            </div>
+
+            <div class="flex items-center my-8">
+                <div class="flex-grow border-t border-gray-200"></div>
+                <span class="flex-shrink-0 mx-4 text-gray-400 text-sm font-medium">Daftar Kosakata</span>
+                <div class="flex-grow border-t border-gray-200"></div>
+            </div>
+
+            <!-- Bagian 3: Tabel Kosakata -->
+            <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                <!-- Filter bar -->
+                <div
+                    class="p-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row gap-3 justify-between items-center">
+                    <div class="relative w-full sm:w-1/2">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <svg class="w-4 h-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                                fill="none" viewBox="0 0 20 20">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                    stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
+                            </svg>
+                        </div>
+                        <input type="text" id="searchInput" placeholder="Cari kata..."
+                            class="w-full pl-10 p-2.5 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm">
+                    </div>
+                    <select id="filterCategorySelect"
+                        class="w-full sm:w-1/3 p-2.5 text-sm border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm appearance-none cursor-pointer">
+                        <option value="ALL">Semua Kategori</option>
+                    </select>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto max-h-80 relative">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 shadow-sm z-10">
+                            <tr>
+                                <th scope="col" class="px-6 py-4 font-bold">Teks</th>
+                                <th scope="col" class="px-6 py-4 font-bold">Bahasa</th>
+                                <th scope="col" class="px-6 py-4 font-bold">Kategori</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vocabTableBody" class="divide-y divide-gray-200">
+                            <!-- Rows dynamis -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
-        <button id="speakAlternatingBtn" style="background-color: #28a745;">Putar Percakapan Bergantian (File
-            JSON)</button>
+        <!-- DOM untuk Popup / Pop over secara Full Screen -->
+        <div id="nowPlayingOverlay"
+            class="hidden fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-6 backdrop-blur-sm">
+            <div
+                class="relative w-full max-w-lg bg-white rounded-3xl p-8 text-center shadow-2xl transform transition-transform scale-100">
+
+                <!-- Tombol Silang (Close / Stop) di pojok kanan atas -->
+                <button id="closePopupBtn"
+                    class="absolute top-4 right-4 text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-full transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <p class="text-sm text-blue-600 font-bold mb-2 uppercase tracking-widest">Bahasa <span id="playingLang"
+                        class="bg-blue-100 px-2 py-1 rounded"></span></p>
+
+                <h1 id="playingText"
+                    class="text-4xl sm:text-5xl font-extrabold text-gray-800 mb-8 leading-tight drop-shadow-sm min-h-[100px] flex items-center justify-center">
+                </h1>
+
+                <!-- Control Buttons -->
+                <div class="flex justify-center gap-4">
+                    <button id="pauseBtn"
+                        class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Pause
+                    </button>
+
+                    <button id="resumeBtn"
+                        class="hidden flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Lanjut
+                    </button>
+
+                    <button id="stopBtn"
+                        class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                        </svg>
+                        Stop All
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -99,9 +244,79 @@
         const jsonInput = document.querySelector('#jsonInput');
         const saveJsonBtn = document.querySelector('#saveJsonBtn');
         const categoryCheckboxContainer = document.querySelector('#categoryCheckboxContainer');
+        const selectAllBtn = document.querySelector('#selectAllBtn');
+        const deselectAllBtn = document.querySelector('#deselectAllBtn');
         const speakAlternatingBtn = document.querySelector('#speakAlternatingBtn');
 
+        // Element untuk Popup / Overlay
+        const nowPlayingOverlay = document.querySelector('#nowPlayingOverlay');
+        const playingText = document.querySelector('#playingText');
+        const playingLang = document.querySelector('#playingLang');
+
+        // Buttons di dalam Popup
+        const closePopupBtn = document.querySelector('#closePopupBtn');
+        const pauseBtn = document.querySelector('#pauseBtn');
+        const resumeBtn = document.querySelector('#resumeBtn');
+        const stopBtn = document.querySelector('#stopBtn');
+
         let voices = [];
+        let globalDialogs = []; // Menyimpan master data dari JSON untuk table
+
+        // Elemen Filter & Table
+        const searchInput = document.querySelector('#searchInput');
+        const filterCategorySelect = document.querySelector('#filterCategorySelect');
+        const vocabTableBody = document.querySelector('#vocabTableBody');
+
+        // Fungsi Helper untuk Sanitasi (Mencegah XSS Attack)
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // Fungsi Render Data Table berdasarkan Input Search & Kategori
+        function renderVocabTable() {
+            const searchQuery = searchInput.value.toLowerCase();
+            const selectedCat = filterCategorySelect.value;
+
+            vocabTableBody.innerHTML = '';
+
+            const filteredDialogs = globalDialogs.filter(dialog => {
+                const matchSearch = dialog.text.toLowerCase().includes(searchQuery);
+                const matchCategory = selectedCat === 'ALL' || dialog.category === selectedCat;
+                return matchSearch && matchCategory;
+            });
+
+            if (filteredDialogs.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="3" class="px-6 py-8 text-center text-gray-500 italic">Tidak ada data yang cocok dengan pencarian.</td>`;
+                vocabTableBody.appendChild(tr);
+                return;
+            }
+
+            filteredDialogs.forEach(dialog => {
+                const tr = document.createElement('tr');
+                tr.className = 'bg-white hover:bg-gray-50 transition-colors';
+
+                // Beri warna latar belakang beda untuk Bahasa Inggris dan Indonesia
+                const langBadgeColor = dialog.lang.startsWith('id') ? 'bg-red-100 text-red-800 border-red-200' : 'bg-blue-100 text-blue-800 border-blue-200';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${escapeHTML(dialog.text)}</td>
+                    <td class="px-6 py-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full border ${langBadgeColor}">${escapeHTML(dialog.lang)}</span></td>
+                    <td class="px-6 py-4"><span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">${escapeHTML(dialog.category) || '-'}</span></td>
+                `;
+                vocabTableBody.appendChild(tr);
+            });
+        }
+
+        // Action Listener untuk Tabel Search & Filter
+        searchInput.addEventListener('input', renderVocabTable);
+        filterCategorySelect.addEventListener('change', renderVocabTable);
 
         // Fungsi untuk memuat daftar suara yang ada di laptop/browser
         function populateVoiceList() {
@@ -143,6 +358,22 @@
             utterThis.pitch = 1; // Nada (0 - 2)
             utterThis.rate = 1;  // Kecepatan (0.1 - 10)
 
+            // Tampilkan di layar saat mulai bicara
+            utterThis.onstart = () => {
+                nowPlayingOverlay.classList.remove('hidden');
+                playingLang.textContent = utterThis.lang || 'Auto';
+                playingText.textContent = utterThis.text;
+
+                // Pastikan tombol pause yang tampil
+                pauseBtn.classList.remove('hidden');
+                resumeBtn.classList.add('hidden');
+            };
+
+            // Sembunyikan ketika selesai bicara
+            utterThis.onend = () => {
+                nowPlayingOverlay.classList.add('hidden');
+            };
+
             synth.speak(utterThis);
         };
 
@@ -167,24 +398,40 @@
                 if (item.category) categories.add(item.category);
             });
 
-            // Kosongkan container
+            // Kosongkan container checkbox dan select filter table
             categoryCheckboxContainer.innerHTML = '';
 
-            // Tambahkan checkbox untuk setiap kategori
+            // Set ulang isi dropdown filter tabel (kembalikan opsi Semua Kategori)
+            filterCategorySelect.innerHTML = '<option value="ALL">Semua Kategori</option>';
+
+            // Tambahkan checkbox dan option filter
             categories.forEach(cat => {
+                // DOM untuk Popover table dropdown
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                filterCategorySelect.appendChild(opt);
+
+                // Tambahkan checkbox untuk setiap kategori dengan gaya Tailwind
                 const label = document.createElement('label');
-                label.style.display = 'block';
-                label.style.marginBottom = '8px';
-                label.style.cursor = 'pointer';
+                label.className = 'cursor-pointer inline-block';
 
                 const cb = document.createElement('input');
                 cb.type = 'checkbox';
                 cb.value = cat;
                 cb.checked = true; // Langsung dicentang secara default
-                cb.className = 'cat-checkbox';
+
+                // Gunakan class tailwind 'hidden' dan tipe 'peer' 
+                // ini trik Tailwind agar kita bisa styling elemen sebelahnya saat checkbox checked
+                cb.className = 'cat-checkbox hidden peer';
+
+                const span = document.createElement('span');
+                // Gaya bentuk "pil" yang bagus, ada efek animasi hover & active states dari Tailwind
+                span.className = 'px-3 py-1.5 rounded-full text-sm font-semibold transition-colors duration-200 border-2 border-blue-500 select-none peer-checked:bg-blue-500 peer-checked:text-white bg-white text-blue-500 block hover:bg-blue-50';
+                span.textContent = cat;
 
                 label.appendChild(cb);
-                label.appendChild(document.createTextNode(' ' + cat));
+                label.appendChild(span);
 
                 categoryCheckboxContainer.appendChild(label);
             });
@@ -207,8 +454,10 @@
                 dataToLoad = defaultDialogs;
             }
 
-            // Perbarui list kategori saat memuat
+            // Update Global Master Data & Perbarui Tabel List Kategori
+            globalDialogs = dataToLoad;
             updateCategoryDropdown(dataToLoad);
+            renderVocabTable();
         }
         loadJsonFromBrowser();
 
@@ -216,15 +465,34 @@
         saveJsonBtn.onclick = () => {
             try {
                 // Uji coba mengubah String Input ke JSON Object agar pasti formatnya BENAR
-                const parsedJson = JSON.parse(jsonInput.value);
+                let parsedJson = JSON.parse(jsonInput.value);
+
+                // Filter Data Ganda (Duplicate) berdasarkan text, lang, dan category
+                const uniqueDialogs = [];
+                const seen = new Set();
+
+                parsedJson.forEach(item => {
+                    // Buat identifier unik dari teks, bahasa, dan kategori (huruf kecil semua agar huruf besar/kecil dianggap sama)
+                    const identifier = `${(item.text || '').toLowerCase().trim()}|${(item.lang || '').toLowerCase()}|${(item.category || '').toLowerCase()}`;
+
+                    if (!seen.has(identifier)) {
+                        seen.add(identifier);
+                        uniqueDialogs.push(item);
+                    }
+                });
+
+                // Tulis kembali hasil ke dalam textarea agar user tahu data ganda sudah dihapus otomatis
+                jsonInput.value = JSON.stringify(uniqueDialogs, null, 4);
 
                 // Jika tidak error, simpan ke memori browser (localStorage)
                 localStorage.setItem('tts_dialogs', jsonInput.value);
 
-                // Segera perbarui dropdown kategori sesuai JSON terbaru
-                updateCategoryDropdown(parsedJson);
+                // Segera perbarui state lokal dan interface
+                globalDialogs = uniqueDialogs;
+                updateCategoryDropdown(uniqueDialogs);
+                renderVocabTable();
 
-                alert("Berhasil! Format JSON tersimpan di browser & Kategori telah diperbarui.");
+                alert(`Berhasil! Format JSON tersimpan.\n\nINFO: Data ganda telah dibersihkan otomatis. Kategori dan tabel telah diperbarui.`);
             } catch (error) {
                 alert("GAGAL MENYIMPAN!\nPastikan format JSON benar.\n\n" + error.message);
             }
@@ -232,9 +500,10 @@
 
         // 3. Fungsi mencampur bahasa (Bergantian Text-to-Speech via JSON)
         speakAlternatingBtn.onclick = () => {
-            if (synth.speaking) {
+            if (synth.speaking || synth.pending) {
                 console.warn('Menghentikan suara sebelumnya...');
                 synth.cancel(); // Hentikan yang sedang berjalan agar bisa mulai baru
+                nowPlayingOverlay.classList.add('hidden');
             }
 
             let dialogs = [];
@@ -294,9 +563,63 @@
 
                 utter.rate = 1;
 
+                // Tampilkan kalimat di layar secara real-time saat mulai diucapkan
+                utter.onstart = () => {
+                    nowPlayingOverlay.classList.remove('hidden');
+                    playingLang.textContent = dialog.lang;
+                    playingText.textContent = dialog.text;
+
+                    // Pastikan tombol pause yang tampil, resume hilang
+                    pauseBtn.classList.remove('hidden');
+                    resumeBtn.classList.add('hidden');
+                };
+
+                // Sembunyikan wadah kalau pemutaran semua list antrean sudah beres
+                utter.onend = () => {
+                    // Kasih jeda waktu 100 milidetik untuk melihat apakah ada kata selanjutnya di antrean
+                    setTimeout(() => {
+                        if (!synth.speaking && !synth.pending) {
+                            nowPlayingOverlay.classList.add('hidden');
+                        }
+                    }, 100);
+                };
+
                 // Masukkan ke antrean Web Speech API (akan diputar berurutan otomatis)
                 synth.speak(utter);
             });
+        };
+
+        // 4. Event Listener untuk Pilih Semua / Kosongkan Kategori
+        selectAllBtn.onclick = () => {
+            document.querySelectorAll('.cat-checkbox').forEach(cb => cb.checked = true);
+        };
+        deselectAllBtn.onclick = () => {
+            document.querySelectorAll('.cat-checkbox').forEach(cb => cb.checked = false);
+        };
+
+        // 5. Kontrol Pemutaran pada Popup
+        const stopEverythingAndClose = () => {
+            synth.cancel(); // Menghapus dan mematikan semua antrean suara
+            nowPlayingOverlay.classList.add('hidden');
+        };
+
+        closePopupBtn.onclick = stopEverythingAndClose;
+        stopBtn.onclick = stopEverythingAndClose;
+
+        pauseBtn.onclick = () => {
+            synth.pause();
+
+            // Ganti tombol Pause jadi Lanjut
+            pauseBtn.classList.add('hidden');
+            resumeBtn.classList.remove('hidden');
+        };
+
+        resumeBtn.onclick = () => {
+            synth.resume();
+
+            // Ganti tombol Lanjut kembali jadi Pause
+            resumeBtn.classList.add('hidden');
+            pauseBtn.classList.remove('hidden');
         };
     </script>
 
