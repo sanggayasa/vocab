@@ -247,14 +247,28 @@
             }
 
             // Fungsi pembantu untuk mencari suara berdasarkan prefix bahasa (id atau en)
-            const getVoice = (langPrefix) => voices.find(v => v.lang.toLowerCase().startsWith(langPrefix));
+            // Di beberapa HP Android, kode bahasa Indonesia bukan "id" melainkan "in" (in-ID / in_ID)
+            const getVoice = (langPrefix) => {
+                return voices.find(v => {
+                    const voiceLang = v.lang.toLowerCase();
+                    if (voiceLang.startsWith(langPrefix)) return true;
+                    // Jika mencari 'id' tapi tidak ketemu, coba cari 'in' sebagai fallback
+                    if (langPrefix === 'id' && voiceLang.startsWith('in')) return true;
+                    return false;
+                });
+            };
 
             // Masukkan JSON tadi ke mesin pemutar suara lewat perulangan
             dialogs.forEach(dialog => {
                 const utter = new SpeechSynthesisUtterance(dialog.text);
 
+                // --- BAGIAN SANGAT PENTING UNTUK ANDROID ---
+                // Menyuruh sistem operasi (Android) mengunci bahasa tersebut
+                // meskipun nama suaranya tidak ketemu atau kurang pas.
+                utter.lang = dialog.lang;
+
                 // Cari suara bahasa Indonesia atau English
-                const prefix = dialog.lang.split('-')[0]; // 'id' atau 'en'
+                const prefix = dialog.lang.split('-')[0].toLowerCase(); // 'id' atau 'en'
                 const voice = getVoice(prefix);
 
                 if (voice) {
