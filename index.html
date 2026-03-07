@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sanggayasa TTS Simple</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            padding: 50px;
+            background-color: #f4f4f9;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        select {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Web Text-to-Speech</h2>
+        <p>Masukkan teks di bawah ini:</p>
+
+        <select id="voiceSelect">
+            <option value="">Memuat suara...</option>
+        </select>
+
+        <textarea id="textInput">Hello Sanggayasa, let's learn English today!</textarea>
+
+        <button id="speakBtn">Putar Suara</button>
+
+        <hr style="margin: 20px 0;">
+        <h3>Mode Percakapan (JSON)</h3>
+        <p>Masukkan skrip percakapan format array JSON:</p>
+        <textarea id="jsonInput" style="height: 250px; font-family: monospace; font-size: 14px;"></textarea>
+        <button id="saveJsonBtn" style="background-color: #ffc107; color: black; margin-bottom: 10px;">Simpan JSON ke
+            Browser</button>
+
+        <label for="categorySelect" style="display: block; margin-bottom: 5px;"><strong>Pilih Kategori untuk
+                Diputar:</strong></label>
+        <select id="categorySelect" style="margin-bottom: 15px;">
+            <option value="all">Semua Kategori</option>
+        </select>
+
+        <button id="speakAlternatingBtn" style="background-color: #28a745;">Putar Percakapan Bergantian (File
+            JSON)</button>
+    </div>
+
+    <script>
+        const synth = window.speechSynthesis;
+        const voiceSelect = document.querySelector('#voiceSelect');
+        const textInput = document.querySelector('#textInput');
+        const speakBtn = document.querySelector('#speakBtn');
+        const jsonInput = document.querySelector('#jsonInput');
+        const saveJsonBtn = document.querySelector('#saveJsonBtn');
+        const categorySelect = document.querySelector('#categorySelect');
+        const speakAlternatingBtn = document.querySelector('#speakAlternatingBtn');
+
+        let voices = [];
+
+        // Fungsi untuk memuat daftar suara yang ada di laptop/browser
+        function populateVoiceList() {
+            voices = synth.getVoices();
+            voiceSelect.innerHTML = '';
+
+            voices.forEach((voice, i) => {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.setAttribute('data-lang', voice.lang);
+                option.setAttribute('data-name', voice.name);
+                voiceSelect.appendChild(option);
+            });
+        }
+
+        // Menangani perubahan suara
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = populateVoiceList;
+        }
+
+        // Fungsi utama untuk menjalankan suara
+        speakBtn.onclick = () => {
+            if (synth.speaking) {
+                console.error('Masih ada proses bicara...');
+                return;
+            }
+
+            const utterThis = new SpeechSynthesisUtterance(textInput.value);
+            const selectedOption = voiceSelect.selectedOptions[0].getAttribute('data-name');
+
+            // Cari objek suara yang dipilih user
+            voices.forEach((voice) => {
+                if (voice.name === selectedOption) {
+                    utterThis.voice = voice;
+                }
+            });
+
+            // Pengaturan tambahan (opsional)
+            utterThis.pitch = 1; // Nada (0 - 2)
+            utterThis.rate = 1;  // Kecepatan (0.1 - 10)
+
+            synth.speak(utterThis);
+        };
+
+        // Default Skrip JSON Jika Kosong
+        // Default Skrip JSON Jika Kosong
+        const defaultDialogs = [
+            { "text": "Kucing", "lang": "id-ID", "category": "Hewan" },
+            { "text": "Cat", "lang": "en-US", "category": "Hewan" },
+            { "text": "Anjing", "lang": "id-ID", "category": "Hewan" },
+            { "text": "Dog", "lang": "en-US", "category": "Hewan" },
+            { "text": "Pesawat", "lang": "id-ID", "category": "Udara" },
+            { "text": "Airplane", "lang": "en-US", "category": "Udara" },
+            { "text": "Mobil", "lang": "id-ID", "category": "Darat" },
+            { "text": "Car", "lang": "en-US", "category": "Darat" }
+        ];
+
+        // Fungsi memperbarui pilihan kategori berdasarkan JSON saat ini
+        function updateCategoryDropdown(dialogsArray) {
+            // Mengambil semua kategori unik dari array JSON
+            const categories = new Set();
+            dialogsArray.forEach(item => {
+                if (item.category) categories.add(item.category);
+            });
+
+            // Reset isi dropdown (pertahankan opsi Semua Kategori)
+            categorySelect.innerHTML = '<option value="all">Semua Kategori</option>';
+
+            // Tambahkan kategori yang ditemukan ke dalam dropdown
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                categorySelect.appendChild(option);
+            });
+        }
+
+        // 1. Fungsi saat halaman pertama kali load (baca dari localStorage)
+        function loadJsonFromBrowser() {
+            const savedData = localStorage.getItem('tts_dialogs');
+            let dataToLoad;
+
+            if (savedData) {
+                jsonInput.value = savedData; // Jika ada yg tersimpan, tampilkan
+                try {
+                    dataToLoad = JSON.parse(savedData);
+                } catch (e) {
+                    dataToLoad = defaultDialogs;
+                }
+            } else {
+                jsonInput.value = JSON.stringify(defaultDialogs, null, 4); // Jika kosong, gunakan bawaan
+                dataToLoad = defaultDialogs;
+            }
+
+            // Perbarui list kategori saat memuat
+            updateCategoryDropdown(dataToLoad);
+        }
+        loadJsonFromBrowser();
+
+        // 2. Event Listener untuk tombol Simpan
+        saveJsonBtn.onclick = () => {
+            try {
+                // Uji coba mengubah String Input ke JSON Object agar pasti formatnya BENAR
+                const parsedJson = JSON.parse(jsonInput.value);
+
+                // Jika tidak error, simpan ke memori browser (localStorage)
+                localStorage.setItem('tts_dialogs', jsonInput.value);
+
+                // Segera perbarui dropdown kategori sesuai JSON terbaru
+                updateCategoryDropdown(parsedJson);
+
+                alert("Berhasil! Format JSON tersimpan di browser & Kategori telah diperbarui.");
+            } catch (error) {
+                alert("GAGAL MENYIMPAN!\nPastikan format JSON benar.\n\n" + error.message);
+            }
+        };
+
+        // 3. Fungsi mencampur bahasa (Bergantian Text-to-Speech via JSON)
+        speakAlternatingBtn.onclick = () => {
+            if (synth.speaking) {
+                console.warn('Menghentikan suara sebelumnya...');
+                synth.cancel(); // Hentikan yang sedang berjalan agar bisa mulai baru
+            }
+
+            let dialogs = [];
+            try {
+                // Mengambil nilai di textarea dan menjadikannya array Object (JSON)
+                dialogs = JSON.parse(jsonInput.value);
+            } catch (e) {
+                alert("Terdapat error pada format JSON di kotak input. Harap perbaiki sebelum memutar suara.");
+                return;
+            }
+
+            // Filter JSON berdasar Kategori yang dipilih
+            const selectedCat = categorySelect.value;
+            if (selectedCat !== "all") {
+                dialogs = dialogs.filter(item => item.category === selectedCat);
+            }
+
+            if (dialogs.length === 0) {
+                alert("Tidak ada teks dengan kategori tersebut.");
+                return;
+            }
+
+            // Fungsi pembantu untuk mencari suara berdasarkan prefix bahasa (id atau en)
+            const getVoice = (langPrefix) => voices.find(v => v.lang.toLowerCase().startsWith(langPrefix));
+
+            // Masukkan JSON tadi ke mesin pemutar suara lewat perulangan
+            dialogs.forEach(dialog => {
+                const utter = new SpeechSynthesisUtterance(dialog.text);
+
+                // Cari suara bahasa Indonesia atau English
+                const prefix = dialog.lang.split('-')[0]; // 'id' atau 'en'
+                const voice = getVoice(prefix);
+
+                if (voice) {
+                    utter.voice = voice;
+                }
+
+                utter.rate = 1;
+
+                // Masukkan ke antrean Web Speech API (akan diputar berurutan otomatis)
+                synth.speak(utter);
+            });
+        };
+    </script>
+
+</body>
+
+</html>
