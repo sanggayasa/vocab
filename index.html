@@ -236,6 +236,29 @@
         </div>
     </div>
 
+    <!-- DOM untuk Modal Custom Sukses Simpan -->
+    <div id="successModal"
+        class="hidden fixed inset-0 z-[60] bg-gray-900/50 flex flex-col items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div
+            class="bg-white rounded-2xl shadow-xl w-full max-w-sm text-center transform scale-100 transition-transform">
+            <div class="p-6">
+                <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Simpan Berhasil!</h3>
+                <p id="successModalMessage"
+                    class="text-sm text-gray-500 text-left bg-gray-50 p-3 rounded-lg border border-gray-100"></p>
+                <button id="closeModalBtn"
+                    class="mt-6 w-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-bold py-2.5 px-4 rounded-xl transition-colors shadow-sm focus:ring-4 focus:ring-green-100">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const synth = window.speechSynthesis;
         const voiceSelect = document.querySelector('#voiceSelect');
@@ -244,6 +267,12 @@
         const jsonInput = document.querySelector('#jsonInput');
         const saveJsonBtn = document.querySelector('#saveJsonBtn');
         const categoryCheckboxContainer = document.querySelector('#categoryCheckboxContainer');
+
+        // Element Modal Kustom
+        const successModal = document.querySelector('#successModal');
+        const successModalMessage = document.querySelector('#successModalMessage');
+        const closeModalBtn = document.querySelector('#closeModalBtn');
+
         const selectAllBtn = document.querySelector('#selectAllBtn');
         const deselectAllBtn = document.querySelector('#deselectAllBtn');
         const speakAlternatingBtn = document.querySelector('#speakAlternatingBtn');
@@ -467,11 +496,14 @@
                 // Uji coba mengubah String Input ke JSON Object agar pasti formatnya BENAR
                 let parsedJson = JSON.parse(jsonInput.value);
 
+                // GABUNGKAN DATA: Ambil data lama di sistem, lalu tambahkan data baru dari inputan
+                const combinedData = [...globalDialogs, ...parsedJson];
+
                 // Filter Data Ganda (Duplicate) berdasarkan text, lang, dan category
                 const uniqueDialogs = [];
                 const seen = new Set();
 
-                parsedJson.forEach(item => {
+                combinedData.forEach(item => {
                     // Deteksi berbagai gaya penulisan atribut kategori dan rapikan spasinya
                     let rawCat = item.category || item.kategori || item.Category || item.Kategori || "Lainnya";
                     rawCat = rawCat.toString().trim();
@@ -502,10 +534,25 @@
                 updateCategoryDropdown(uniqueDialogs);
                 renderVocabTable();
 
-                alert(`Berhasil! Format JSON tersimpan.\n\nINFO: Data ganda telah dibersihkan otomatis. Kategori dan tabel telah diperbarui.`);
+                // Tampilkan Modal sukses custom pengganti alert()
+                const duplicatesRemoved = combinedData.length - uniqueDialogs.length;
+                let infoMsg = `<b>✅ Tersimpan:</b> ${parsedJson.length} Kosakata Baru.<br>`;
+
+                if (duplicatesRemoved > 0) {
+                    infoMsg += `<br><span class="text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded text-xs"><b>INFO:</b> Ada ${duplicatesRemoved} antrean data ganda yang batal dimasukkan untuk mencegah duplikasi.</span>`;
+                }
+
+                successModalMessage.innerHTML = infoMsg;
+                successModal.classList.remove('hidden');
+
             } catch (error) {
                 alert("GAGAL MENYIMPAN!\nPastikan format JSON benar.\n\n" + error.message);
             }
+        };
+
+        // Event Listener Tutup Modal
+        closeModalBtn.onclick = () => {
+            successModal.classList.add('hidden');
         };
 
         // 3. Fungsi mencampur bahasa (Bergantian Text-to-Speech via JSON)
