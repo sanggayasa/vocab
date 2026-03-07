@@ -672,6 +672,13 @@
         };
 
         resumeBtn.onclick = () => {
+            // Trik khusus untuk membangunkan (Wake-up) Web Speech API di Android Chrome yang sering nge-bug (ngadat saat resume)
+            synth.resume();
+
+            const wakeUpUtterance = new SpeechSynthesisUtterance('');
+            wakeUpUtterance.volume = 0; // bisukan
+            synth.speak(wakeUpUtterance);
+
             synth.resume();
 
             // Ganti tombol Lanjut kembali jadi Pause
