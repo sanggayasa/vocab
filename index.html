@@ -156,7 +156,7 @@
                 </div>
 
                 <!-- Table -->
-                <div class="overflow-x-auto max-h-80 relative">
+                <div class="overflow-x-auto max-h-80 relative rounded-t-lg">
                     <table class="w-full text-sm text-left text-gray-500">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 shadow-sm z-10">
                             <tr>
@@ -169,6 +169,58 @@
                             <!-- Rows dynamis -->
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Pagination UI -->
+                <div
+                    class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 rounded-b-lg shadow-sm">
+                    <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                        <div>
+                            <p class="text-sm text-gray-700">
+                                Menampilkan
+                                <span class="font-medium" id="pageStartItem">0</span>
+                                -
+                                <span class="font-medium" id="pageEndItem">0</span>
+                                dari
+                                <span class="font-medium" id="pageTotalItems">0</span>
+                                data
+                            </p>
+                        </div>
+                        <div>
+                            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                                <button id="prevPageBtn"
+                                    class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span class="sr-only">Previous</span>
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd"
+                                            d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                                <span id="pageInfoText"
+                                    class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">
+                                    Hal 1 dari 1
+                                </span>
+                                <button id="nextPageBtn"
+                                    class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span class="sr-only">Next</span>
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd"
+                                            d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
+
+                    <!-- Mobile Pagination (Simple) -->
+                    <div class="flex flex-1 justify-between sm:hidden">
+                        <button id="prevPageBtnMobile"
+                            class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">Sblmnya</button>
+                        <button id="nextPageBtnMobile"
+                            class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">Berikut</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -301,6 +353,21 @@
         const filterCategorySelect = document.querySelector('#filterCategorySelect');
         const vocabTableBody = document.querySelector('#vocabTableBody');
 
+        // State Pagination
+        let currentTablePage = 1;
+        const itemsPerPage = 10;
+        let finalFilteredDialogs = [];
+
+        // DOM Pagination
+        const pageStartItem = document.querySelector('#pageStartItem');
+        const pageEndItem = document.querySelector('#pageEndItem');
+        const pageTotalItems = document.querySelector('#pageTotalItems');
+        const pageInfoText = document.querySelector('#pageInfoText');
+        const prevPageBtn = document.querySelector('#prevPageBtn');
+        const nextPageBtn = document.querySelector('#nextPageBtn');
+        const prevPageBtnMobile = document.querySelector('#prevPageBtnMobile');
+        const nextPageBtnMobile = document.querySelector('#nextPageBtnMobile');
+
         // Fungsi Helper untuk Sanitasi (Mencegah XSS Attack)
         function escapeHTML(str) {
             if (typeof str !== 'string') return '';
@@ -312,27 +379,41 @@
                 .replace(/'/g, '&#39;');
         }
 
-        // Fungsi Render Data Table berdasarkan Input Search & Kategori
+        // Fungsi Render Data Table berdasarkan Input Search & Kategori (dan Pagination)
         function renderVocabTable() {
             const searchQuery = searchInput.value.toLowerCase();
             const selectedCat = filterCategorySelect.value;
 
             vocabTableBody.innerHTML = '';
 
-            const filteredDialogs = globalDialogs.filter(dialog => {
+            // 1. Filter Data
+            finalFilteredDialogs = globalDialogs.filter(dialog => {
                 const matchSearch = dialog.text.toLowerCase().includes(searchQuery);
                 const matchCategory = selectedCat === 'ALL' || dialog.category === selectedCat;
                 return matchSearch && matchCategory;
             });
 
-            if (filteredDialogs.length === 0) {
+            const totalItems = finalFilteredDialogs.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
+            // Koreksi halaman jika kelebihan (misalnya saat kita search dan data makin sedikit)
+            if (currentTablePage > totalPages) currentTablePage = totalPages;
+
+            if (totalItems === 0) {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td colspan="3" class="px-6 py-8 text-center text-gray-500 italic">Tidak ada data yang cocok dengan pencarian.</td>`;
                 vocabTableBody.appendChild(tr);
+                updatePaginationUI(0, 0, 0, 1, 1);
                 return;
             }
 
-            filteredDialogs.forEach(dialog => {
+            // 2. Terapkan Limit Pagination (Slice Array)
+            const startIndex = (currentTablePage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+            const paginatedData = finalFilteredDialogs.slice(startIndex, endIndex);
+
+            // 3. Render Baris per Baris
+            paginatedData.forEach(dialog => {
                 const tr = document.createElement('tr');
                 tr.className = 'bg-white hover:bg-gray-50 transition-colors';
 
@@ -346,11 +427,61 @@
                 `;
                 vocabTableBody.appendChild(tr);
             });
+
+            // 4. Update Angka-angka pada layar Pagination
+            updatePaginationUI(startIndex + 1, endIndex, totalItems, currentTablePage, totalPages);
         }
 
-        // Action Listener untuk Tabel Search & Filter
-        searchInput.addEventListener('input', renderVocabTable);
-        filterCategorySelect.addEventListener('change', renderVocabTable);
+        // Fungsi Helper untuk mengatur UI Tombol Pagination
+        function updatePaginationUI(start, end, total, current, maxPage) {
+            pageStartItem.textContent = start;
+            pageEndItem.textContent = end;
+            pageTotalItems.textContent = total;
+            pageInfoText.textContent = `Hal ${current} dari ${maxPage}`;
+
+            const disablePrev = current <= 1;
+            const disableNext = current >= maxPage;
+
+            prevPageBtn.disabled = disablePrev;
+            prevPageBtnMobile.disabled = disablePrev;
+
+            nextPageBtn.disabled = disableNext;
+            nextPageBtnMobile.disabled = disableNext;
+        }
+
+        // Event Listener Tombol Paginasi
+        const goPrevPage = () => {
+            if (currentTablePage > 1) {
+                currentTablePage--;
+                renderVocabTable();
+            }
+        };
+
+        const goNextPage = () => {
+            const totalPages = Math.ceil(finalFilteredDialogs.length / itemsPerPage);
+            if (currentTablePage < totalPages) {
+                currentTablePage++;
+                renderVocabTable();
+            }
+        };
+
+        prevPageBtn.onclick = goPrevPage;
+        prevPageBtnMobile.onclick = goPrevPage;
+
+        nextPageBtn.onclick = goNextPage;
+        nextPageBtnMobile.onclick = goNextPage;
+
+
+        // Action Listener untuk Tabel Search & Filter 
+        // (Wajib kembalikan ke Halaman 1 agar gak error)
+        searchInput.addEventListener('input', () => {
+            currentTablePage = 1;
+            renderVocabTable();
+        });
+        filterCategorySelect.addEventListener('change', () => {
+            currentTablePage = 1;
+            renderVocabTable();
+        });
 
         // Fungsi untuk memuat daftar suara yang ada di laptop/browser
         function populateVoiceList() {
@@ -477,16 +608,17 @@
             let dataToLoad;
 
             if (savedData) {
-                jsonInput.value = savedData; // Jika ada yg tersimpan, tampilkan
                 try {
                     dataToLoad = JSON.parse(savedData);
                 } catch (e) {
                     dataToLoad = defaultDialogs;
                 }
             } else {
-                jsonInput.value = JSON.stringify(defaultDialogs, null, 4); // Jika kosong, gunakan bawaan
                 dataToLoad = defaultDialogs;
             }
+
+            // Tampilkan hanya maksimal 4 sampel pertama di form input JSON agar browser tidak lag
+            jsonInput.value = JSON.stringify(dataToLoad.slice(0, 4), null, 4);
 
             // Update Global Master Data & Perbarui Tabel List Kategori
             globalDialogs = dataToLoad;
@@ -528,11 +660,11 @@
                     }
                 });
 
-                // Tulis kembali hasil ke dalam textarea agar user tahu data ganda sudah dihapus otomatis
-                jsonInput.value = JSON.stringify(uniqueDialogs, null, 4);
+                // Simpan SEMUA DATA SECARA UTUH ke memori browser (localStorage)
+                localStorage.setItem('tts_dialogs', JSON.stringify(uniqueDialogs));
 
-                // Jika tidak error, simpan ke memori browser (localStorage)
-                localStorage.setItem('tts_dialogs', jsonInput.value);
+                // Tulis kembali hasil ke dalam textarea HANYA 4 data pertama, menghindari browser lag/crash
+                jsonInput.value = JSON.stringify(uniqueDialogs.slice(0, 4), null, 4);
 
                 // Segera perbarui state lokal dan interface
                 globalDialogs = uniqueDialogs;
