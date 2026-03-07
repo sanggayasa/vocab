@@ -472,8 +472,18 @@
                 const seen = new Set();
 
                 parsedJson.forEach(item => {
+                    // Deteksi berbagai gaya penulisan atribut kategori dan rapikan spasinya
+                    let rawCat = item.category || item.kategori || item.Category || item.Kategori || "Lainnya";
+                    rawCat = rawCat.toString().trim();
+
+                    // Paksa struktur JSON agar atributnya selalu persis bernama "category"
+                    item.category = rawCat;
+
+                    // Hapus format yang salah ketik agar data JSON tetap rapi
+                    delete item.kategori; delete item.Category; delete item.Kategori;
+
                     // Buat identifier unik dari teks, bahasa, dan kategori (huruf kecil semua agar huruf besar/kecil dianggap sama)
-                    const identifier = `${(item.text || '').toLowerCase().trim()}|${(item.lang || '').toLowerCase()}|${(item.category || '').toLowerCase()}`;
+                    const identifier = `${(item.text || '').toLowerCase().trim()}|${(item.lang || '').toLowerCase().trim()}|${item.category.toLowerCase()}`;
 
                     if (!seen.has(identifier)) {
                         seen.add(identifier);
