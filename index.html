@@ -1782,14 +1782,8 @@
                     nowPlayingOverlay.classList.add('hidden');
                 }
 
-                let dialogs = [];
-                try {
-                    // Mengambil nilai di textarea dan menjadikannya array Object (JSON)
-                    dialogs = JSON.parse(jsonInput.value);
-                } catch (e) {
-                    alert("Terdapat error pada format JSON di kotak input. Harap perbaiki sebelum memutar suara.");
-                    return;
-                }
+                // Gunakan Master Data dari Sistem, karena kotak input (textarea) hanya berisi sampel 4 data.
+                let dialogs = [...globalDialogs];
 
                 // Ambil semua kategori yang dicentang
                 const checkedBoxes = document.querySelectorAll('.cat-checkbox:checked');
