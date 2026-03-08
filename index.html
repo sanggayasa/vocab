@@ -1684,6 +1684,14 @@
                 });
             }
 
+            // Implementasi tombol Pilih Semua & Kosongkan untuk filter multi-kategori
+            document.getElementById('selectAllBtn').addEventListener('click', () => {
+                document.querySelectorAll('.cat-checkbox').forEach(cb => cb.checked = true);
+            });
+            document.getElementById('deselectAllBtn').addEventListener('click', () => {
+                document.querySelectorAll('.cat-checkbox').forEach(cb => cb.checked = false);
+            });
+
             // 1. Fungsi saat halaman pertama kali load (baca dari localStorage)
             function loadJsonFromBrowser() {
                 const savedData = localStorage.getItem('tts_dialogs');
